@@ -1,5 +1,7 @@
-﻿using System.Reflection;
+﻿using System.Collections.Generic;
+using System.Reflection;
 using BepInEx;
+using BepInEx.Configuration;
 using BepInEx.Logging;
 using HarmonyLib;
 
@@ -11,24 +13,47 @@ namespace Moonlighter
         private const string PluginGuid = "p1xel8ted.moonlighter.ultrawide";
         private const string PluginName = "UltraWide";
         private const string PluginVersion = "0.0.1";
-        private static ManualLogSource _log;
+        public static ManualLogSource LOG;
+        
+        public static List<LocationMarker > Markers { get; set; } = new();
+        
+        public static ConfigEntry<bool> DebugMarkers { get; private set; }
 
         private void Awake()
         {
-            _log = new ManualLogSource("Log");
-            BepInEx.Logging.Logger.Sources.Add(_log);
+            DebugMarkers = Config.Bind("Debug", "Markers", true, "Show debug markers in dungeons.");
+            DebugMarkers.SettingChanged += (_, _) =>
+            {
+                if (DebugMarkers.Value)
+                {
+                    foreach (var marker in Markers)
+                    {
+                        marker.Show();
+                    }
+                }
+                else
+                {
+                    foreach (var marker in Markers)
+                    {
+                        marker.Hide();
+                    }
+                }
+            };
+            
+            LOG = new ManualLogSource("Log");
+            BepInEx.Logging.Logger.Sources.Add(LOG);
             Harmony.CreateAndPatchAll(Assembly.GetExecutingAssembly(), PluginGuid);
-            _log.LogWarning($"Plugin {PluginName} is loaded!");
+            LOG.LogWarning($"Plugin {PluginName} is loaded!");
         }
 
         private void OnDestroy()
         {
-            _log.LogError("I've been destroyed!");
+            LOG.LogError("I've been destroyed!");
         }
 
         private void OnDisable()
         {
-            _log.LogError("I've been disabled!");
+            LOG.LogError("I've been disabled!");
         }
     }
 }

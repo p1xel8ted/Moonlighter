@@ -3,6 +3,7 @@ using System.Reflection;
 using BepInEx;
 using BepInEx.Configuration;
 using BepInEx.Logging;
+using DG.Tweening.Core;
 using HarmonyLib;
 
 namespace Moonlighter
@@ -14,32 +15,9 @@ namespace Moonlighter
         private const string PluginName = "UltraWide";
         private const string PluginVersion = "0.0.1";
         public static ManualLogSource LOG;
-        
-        public static List<LocationMarker > Markers { get; set; } = new();
-        
-        public static ConfigEntry<bool> DebugMarkers { get; private set; }
 
         private void Awake()
         {
-            DebugMarkers = Config.Bind("Debug", "Markers", true, "Show debug markers in dungeons.");
-            DebugMarkers.SettingChanged += (_, _) =>
-            {
-                if (DebugMarkers.Value)
-                {
-                    foreach (var marker in Markers)
-                    {
-                        marker.Show();
-                    }
-                }
-                else
-                {
-                    foreach (var marker in Markers)
-                    {
-                        marker.Hide();
-                    }
-                }
-            };
-            
             LOG = new ManualLogSource("Log");
             BepInEx.Logging.Logger.Sources.Add(LOG);
             Harmony.CreateAndPatchAll(Assembly.GetExecutingAssembly(), PluginGuid);

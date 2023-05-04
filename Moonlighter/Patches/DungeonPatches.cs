@@ -123,7 +123,7 @@ public static class DungeonPatches
         Plugin.LOG.LogWarning("First and Last Doors End\n\n");
 
 
-        if (to.specialDoor != null)
+        if (to.specialDoor == null) return;
         {
             var sd = to.specialDoor;
             if (sd.transform.localPosition.x < 0)
@@ -160,28 +160,26 @@ public static class DungeonPatches
     [HarmonyPatch(typeof(DungeonRoom), nameof(DungeonRoom.EnterRoom))]
     public static void DungeonRoom_EnterRoom(ref DungeonRoom __instance)
     {
-        if (__instance.roomInfo.name.Equals("Init"))
+        if (!__instance.roomInfo.name.Equals("Init")) return;
+        
+        var lastLevelDoor = Helpers.FindObjects("LastLevelDoor", true).FirstOrDefault();
+        if (lastLevelDoor == null) return;
+        
+        if (Math.Abs(lastLevelDoor.transform.localRotation.z - 1) > 0.01)
         {
-            var lastLevelDoor = Helpers.FindObjects("LastLevelDoor", true).FirstOrDefault();
-            if (lastLevelDoor != null)
+            Plugin.LOG.LogWarning(
+                $"-- Init LastLevel Door: {lastLevelDoor.name}, LocalPosition: {lastLevelDoor.transform.localPosition}");
+            if (lastLevelDoor.transform.localPosition.x < 0)
             {
-                if (Math.Abs(lastLevelDoor.transform.localRotation.z - 1) > 0.01)
-                {
-                    Plugin.LOG.LogWarning(
-                        $"-- Init LastLevel Door: {lastLevelDoor.name}, LocalPosition: {lastLevelDoor.transform.localPosition}");
-                    if (lastLevelDoor.transform.localPosition.x < 0)
-                    {
-                        var leftDoorPosition = GetAdjustedLeftDoorPosition(lastLevelDoor.transform.localPosition.x);
-                        lastLevelDoor.transform.localPosition = new Vector3(leftDoorPosition, 0, 0);
-                    }
+                var leftDoorPosition = GetAdjustedLeftDoorPosition(lastLevelDoor.transform.localPosition.x);
+                lastLevelDoor.transform.localPosition = new Vector3(leftDoorPosition, 0, 0);
+            }
 
-                    if (lastLevelDoor.transform.localPosition.x > 0)
-                    {
-                        var rightDoorPosition = GetAdjustedRightDoorPosition(lastLevelDoor.transform.localPosition.x);
-                        lastLevelDoor.transform.localPosition = new Vector3(rightDoorPosition, 0, 0);
-                    }
-                }
-            }   
+            if (lastLevelDoor.transform.localPosition.x > 0)
+            {
+                var rightDoorPosition = GetAdjustedRightDoorPosition(lastLevelDoor.transform.localPosition.x);
+                lastLevelDoor.transform.localPosition = new Vector3(rightDoorPosition, 0, 0);
+            }
         }
     }
 

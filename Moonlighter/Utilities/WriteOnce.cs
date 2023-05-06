@@ -8,10 +8,10 @@ public sealed class WriteOnce<T>
 
     public bool HasValue { get; private set; }
 
-    public override string ToString()
-    {
-        return HasValue ? Convert.ToString(_value) : "";
-    }
+    // public override string ToString()
+    // {
+    //     return HasValue ? Convert.ToString(_value) : "";
+    // }
     public T Value
     {
         get => !HasValue ? default : _value;
@@ -24,4 +24,10 @@ public sealed class WriteOnce<T>
     }
 
     public static implicit operator T(WriteOnce<T> value) { return value.Value; }
+
+    public void ResetValue()
+    {
+        HasValue = false;
+        _value = default;
+    }
 }

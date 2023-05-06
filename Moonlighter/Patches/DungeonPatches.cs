@@ -3,7 +3,7 @@ using HarmonyLib;
 using Moonlighter.Utilities;
 using UnityEngine;
 
-namespace Moonlighter;
+namespace Moonlighter.Patches;
 
 [HarmonyPatch]
 public static class DungeonPatches
@@ -12,6 +12,7 @@ public static class DungeonPatches
     private const float DoorCorrectionPercentage = 0.015f;
     private static float PlayerAspectRatio { get; set; }
     private static float ScaleFactor { get; set; }
+
 
     //in case user changes resolution
     private static void UpdateAspectValues()
@@ -24,12 +25,6 @@ public static class DungeonPatches
     {
         UpdateAspectValues();
         return PlayerAspectRatio > BaseAspectRatio;
-    }
-
-    private static int GetAdjustedFloorWidth()
-    {
-        UpdateAspectValues();
-        return Mathf.RoundToInt(484 * ScaleFactor);
     }
 
     private static float GetAdjustedLeftDoorPosition(float baseDoorPosition)
@@ -69,75 +64,65 @@ public static class DungeonPatches
         return rightPosition;
     }
 
+    private static void UpdatePosition(Component door)
+    {
+        if (door != null)
+        {
+            var t = door.transform;
+            if (TransformIsRightAngled(t))
+            {
+                if (TransformIsLeftSide(t))
+                {
+                    Plugin.LOG.LogWarning($"-- (UpdatePosition) Left Door: {door.name}, Original LocalPosition: {t.localPosition}");
+                    UpdateDoorPosition(door, Plugin.FinalLeftDoorPosition, GetAdjustedLeftDoorPosition);
+                    if (door is DungeonDoor dungeonDoor)
+                    {
+                        UpdateDoorEntryPosition(dungeonDoor.playerEnterDestinyRoomPoint, Plugin.FinalLeftDoorEntryPosition);
+                    }
+
+                    Plugin.LOG.LogWarning($"-- (UpdatePosition) Left Door: {door.name}, New LocalPosition: {t.localPosition}");
+                }
+
+                if (TransformIsRightSide(t))
+                {
+                    Plugin.LOG.LogWarning($"-- (UpdatePosition) Right Door: {door.name}, Original LocalPosition: {t.localPosition}");
+                    UpdateDoorPosition(door, Plugin.FinalRightDoorPosition, GetAdjustedRightDoorPosition);
+                    if (door is DungeonDoor dungeonDoor)
+                    {
+                        UpdateDoorEntryPosition(dungeonDoor.playerEnterDestinyRoomPoint, Plugin.FinalRightDoorEntryPosition);
+                    }
+
+                    Plugin.LOG.LogWarning($"-- (UpdatePosition) Right Door: {door.name}, New LocalPosition: {t.localPosition}");
+                }
+            }
+        }
+    }
 
     [HarmonyPostfix]
     [HarmonyPatch(typeof(DungeonManager), nameof(DungeonManager.ChangeRoomTo))]
-    public static void DungeonRoom_EnableRoomDoorsColliders(ref DungeonRoom to)
+    public static void DungeonManager_ChangeRoomTo(ref DungeonRoom to)
     {
-        Plugin.LOG.LogWarning("Regular Doors Begin");
-        foreach (var door in to.roomDoors.Where(a => a != null && a.gameObject.activeSelf))
-        {
-            Plugin.LOG.LogWarning(door == null
-                ? "-- Door: NONE"
-                : $"-- Door: {door.name}, LocalPosition: {door.transform.localPosition}");
-        }
-
-        Plugin.LOG.LogWarning("Regular Doors End\n\n");
-
-        Plugin.LOG.LogWarning("Special Doors Begin");
-        Plugin.LOG.LogWarning(to.specialDoor == null
-            ? "-- Special Door: NONE"
-            : $"-- Special Door: {to.specialDoor.name}, LocalPosition: {to.specialDoor.transform.localPosition}");
-        Plugin.LOG.LogWarning("Special Doors End\n\n");
-
-        Plugin.LOG.LogWarning("First and Last Doors Begin");
-        Plugin.LOG.LogWarning(to.firstLevelDoor == null
-            ? "-- FirstLevel Door: NONE"
-            : $"-- FirstLevel Door: {to.firstLevelDoor.name}, LocalPosition: {to.firstLevelDoor.transform.localPosition}");
-        Plugin.LOG.LogWarning(to.lastLevelDoor == null
-            ? "-- LastLevel Door: NONE"
-            : $"-- LastLevel Door: {to.lastLevelDoor.name}, LocalPosition: {to.lastLevelDoor.transform.localPosition}");
+        UpdatePosition(to.specialDoor);
+        UpdatePosition(to.lastLevelDoor);
+        UpdatePosition(to.firstLevelDoor);
+        UpdatePosition(to.GetWestDoor());
+        UpdatePosition(to.GetEastDoor());
+    }
 
 
-        var lastLevelDoor = Helpers.FindObjects("LastLevelDoor", true).FirstOrDefault();
-        if (lastLevelDoor != null)
-        {
-            if (Math.Abs(lastLevelDoor.transform.localRotation.z - 1) > 0.01)
-            {
-                Plugin.LOG.LogWarning(
-                    $"-- LastLevel Door: {lastLevelDoor.name}, LocalPosition: {lastLevelDoor.transform.localPosition}");
-                if (lastLevelDoor.transform.localPosition.x < 0)
-                {
-                    var leftDoorPosition = GetAdjustedLeftDoorPosition(lastLevelDoor.transform.localPosition.x);
-                    lastLevelDoor.transform.localPosition = new Vector3(leftDoorPosition, 0, 0);
-                }
+    [HarmonyPostfix]
+    [HarmonyPatch(typeof(DungeonLastLevelDoor), nameof(DungeonLastLevelDoor.OnGeneratedDungeon))]
+    public static void DungeonLastLevelDoor_OnGeneratedDungeon(ref DungeonLastLevelDoor __instance)
+    {
+        UpdatePosition(__instance.transform);
+    }
 
-                if (lastLevelDoor.transform.localPosition.x > 0)
-                {
-                    var rightDoorPosition = GetAdjustedRightDoorPosition(lastLevelDoor.transform.localPosition.x);
-                    lastLevelDoor.transform.localPosition = new Vector3(rightDoorPosition, 0, 0);
-                }
-            }
-        }
-
-        Plugin.LOG.LogWarning("First and Last Doors End\n\n");
-
-
-        if (to.specialDoor == null) return;
-        {
-            var sd = to.specialDoor;
-            if (sd.transform.localPosition.x < 0)
-            {
-                var leftDoorPosition = GetAdjustedLeftDoorPosition(sd.transform.localPosition.x);
-                sd.transform.localPosition = new Vector3(leftDoorPosition, 0, 0);
-            }
-
-            if (sd.transform.localPosition.x > 0)
-            {
-                var rightDoorPosition = GetAdjustedRightDoorPosition(sd.transform.localPosition.x);
-                sd.transform.localPosition = new Vector3(rightDoorPosition, 0, 0);
-            }
-        }
+    [HarmonyPostfix]
+    [HarmonyPatch(typeof(NextLevelDoor), nameof(NextLevelDoor.Init))]
+    public static void NextLevelDoor_Init(ref NextLevelDoor __instance)
+    {
+        Plugin.LOG.LogWarning(
+            $"NextLevelDoor_Init: {__instance.name}, LocalPosition: {__instance.transform.localPosition}");
     }
 
     [HarmonyPostfix]
@@ -147,7 +132,7 @@ public static class DungeonPatches
         Plugin.LOG.LogWarning(
             $"DungeonBossRoomEnterDoor.Start: {__instance.name}, LocalPosition: {__instance.transform.localPosition}");
     }
-    
+
     [HarmonyPostfix]
     [HarmonyPatch(typeof(DungeonBossRoomExitDoor), nameof(DungeonBossRoomExitDoor.Start))]
     public static void DungeonBossRoomExitDoor_Start(ref DungeonBossRoomExitDoor __instance)
@@ -155,34 +140,41 @@ public static class DungeonPatches
         Plugin.LOG.LogWarning(
             $"DungeonBossRoomExitDoor.Start: {__instance.name}, LocalPosition: {__instance.transform.localPosition}");
     }
-    
-    [HarmonyPrefix]
+
+
+    private static bool TransformIsRightAngled(Transform transform)
+    {
+        return Math.Abs(transform.localRotation.z - 1) > 0.01;
+    }
+
+    private static bool TransformIsLeftSide(Transform transform)
+    {
+        return transform.localPosition.x < 0;
+    }
+
+    private static bool TransformIsRightSide(Transform transform)
+    {
+        return transform.localPosition.x > 0;
+    }
+
+    private static void UpdateFloorWidth(DungeonRoom dungeonRoom)
+    {
+        UpdateAspectValues();
+        var newFloorWidth = Mathf.RoundToInt(484 * ScaleFactor);
+        dungeonRoom.roomFloorWidth = newFloorWidth;
+    }
+
+
+    [HarmonyPostfix]
     [HarmonyPatch(typeof(DungeonRoom), nameof(DungeonRoom.EnterRoom))]
     public static void DungeonRoom_EnterRoom(ref DungeonRoom __instance)
     {
-        if (!__instance.roomInfo.name.Equals("Init")) return;
-        
-        var lastLevelDoor = Helpers.FindObjects("LastLevelDoor", true).FirstOrDefault();
-        if (lastLevelDoor == null) return;
-        
-        if (Math.Abs(lastLevelDoor.transform.localRotation.z - 1) > 0.01)
-        {
-            Plugin.LOG.LogWarning(
-                $"-- Init LastLevel Door: {lastLevelDoor.name}, LocalPosition: {lastLevelDoor.transform.localPosition}");
-            if (lastLevelDoor.transform.localPosition.x < 0)
-            {
-                var leftDoorPosition = GetAdjustedLeftDoorPosition(lastLevelDoor.transform.localPosition.x);
-                lastLevelDoor.transform.localPosition = new Vector3(leftDoorPosition, 0, 0);
-            }
-
-            if (lastLevelDoor.transform.localPosition.x > 0)
-            {
-                var rightDoorPosition = GetAdjustedRightDoorPosition(lastLevelDoor.transform.localPosition.x);
-                lastLevelDoor.transform.localPosition = new Vector3(rightDoorPosition, 0, 0);
-            }
-        }
+        UpdatePosition(__instance.specialDoor);
+        UpdatePosition(__instance.lastLevelDoor);
+        UpdatePosition(__instance.firstLevelDoor);
+        UpdatePosition(__instance.GetWestDoor());
+        UpdatePosition(__instance.GetEastDoor());
     }
-
 
 
     [HarmonyPostfix]
@@ -190,24 +182,52 @@ public static class DungeonPatches
     public static void DungeonDoor_Start(ref DungeonDoor __instance)
     {
         if (!IsUltrawide()) return;
-        if (__instance.name.Equals("LevelDoorLeft"))
+        
+        switch (__instance.name)
         {
-            var leftDoorPosition = GetAdjustedLeftDoorPosition(__instance.transform.localPosition.x);
-            __instance.transform.localPosition = new Vector3(leftDoorPosition, 0f, 0f);
+            case "LevelDoorLeft":
+                UpdateDoorPosition(__instance, Plugin.FinalLeftDoorPosition, GetAdjustedLeftDoorPosition);
+                UpdateDoorEntryPosition(__instance.playerEnterDestinyRoomPoint, Plugin.FinalLeftDoorEntryPosition);
+                break;
 
-            var newX = __instance.playerEnterDestinyRoomPoint.localPosition.x * ScaleFactor;
-            __instance.playerEnterDestinyRoomPoint.localPosition = new Vector3(newX, 0f, 0f);
-        }
-
-        if (__instance.name.Equals("LevelDoorRight"))
-        {
-            var rightDoorPosition = GetAdjustedRightDoorPosition(__instance.transform.localPosition.x);
-            __instance.transform.localPosition = new Vector3(rightDoorPosition, 0f, 0f);
-
-            var newX = __instance.playerEnterDestinyRoomPoint.localPosition.x * ScaleFactor;
-            __instance.playerEnterDestinyRoomPoint.localPosition = new Vector3(newX, 0f, 0f);
+            case "LevelDoorRight":
+                UpdateDoorPosition(__instance, Plugin.FinalRightDoorPosition, GetAdjustedRightDoorPosition);
+                UpdateDoorEntryPosition(__instance.playerEnterDestinyRoomPoint, Plugin.FinalRightDoorEntryPosition);
+                break;
         }
     }
+
+    private static void UpdateDoorPosition(Component door, WriteOnce<float> finalDoorPosition, Func<float, float> getAdjustedPosition)
+    {
+        if (finalDoorPosition.HasValue)
+        {
+            door.transform.localPosition = new Vector3(finalDoorPosition.Value, 0f, 0f);
+        }
+        else
+        {
+            var transform = door.transform;
+            var doorPosition = getAdjustedPosition(transform.localPosition.x);
+            transform.localPosition = new Vector3(doorPosition, 0f, 0f);
+
+            finalDoorPosition.Value = doorPosition;
+        }
+    }
+
+
+    private static void UpdateDoorEntryPosition(Transform playerEnterDestinyRoomPoint, WriteOnce<float> finalDoorEntryPosition)
+    {
+        if (finalDoorEntryPosition.HasValue)
+        {
+            playerEnterDestinyRoomPoint.localPosition = new Vector3(finalDoorEntryPosition.Value, 0f, 0f);
+        }
+        else
+        {
+            var newX = playerEnterDestinyRoomPoint.localPosition.x * ScaleFactor;
+            playerEnterDestinyRoomPoint.localPosition = new Vector3(newX, 0f, 0f);
+            finalDoorEntryPosition.Value = newX;
+        }
+    }
+
 
     [HarmonyPrefix]
     [HarmonyPatch(typeof(DungeonRoom), nameof(DungeonRoom.FillRoomWithBreakables))]
@@ -218,9 +238,7 @@ public static class DungeonPatches
     public static void DungeonRoom_FillPatches(ref DungeonRoom __instance)
     {
         if (!IsUltrawide()) return;
-        UpdateAspectValues();
-        var newFloorWidth = GetAdjustedFloorWidth();
-        __instance.roomFloorWidth = newFloorWidth;
+        UpdateFloorWidth(__instance);
     }
 
 
@@ -243,9 +261,10 @@ public static class DungeonPatches
 
         foreach (var obj in Helpers.FindObjectsInPath("WallDetails/"))
         {
-            if (Math.Abs(obj.transform.localRotation.z - 1) > 0.01)
+            var t = obj.transform;
+            if (TransformIsRightAngled(t))
             {
-                if (obj.transform.localPosition.x < 0)
+                if (TransformIsLeftSide(t))
                 {
                     var localPosition = obj.transform.localPosition;
                     var newPosition = GetAdjustedLeftPosition(localPosition.x);
@@ -253,7 +272,7 @@ public static class DungeonPatches
                     obj.transform.localPosition = localPosition;
                 }
 
-                if (obj.transform.localPosition.x > 0)
+                if (TransformIsRightSide(t))
                 {
                     var localPosition = obj.transform.localPosition;
                     var newPosition = GetAdjustedRightPosition(localPosition.x);

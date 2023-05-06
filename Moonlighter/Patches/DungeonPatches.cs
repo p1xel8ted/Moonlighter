@@ -24,7 +24,7 @@ public static class DungeonPatches
     private static bool IsUltrawide()
     {
         UpdateAspectValues();
-        return PlayerAspectRatio > BaseAspectRatio;
+        return PlayerAspectRatio > BaseAspectRatio && Plugin.CorrectDungeons.Value && Plugin.UltrawideFixes.Value;
     }
 
     private static float GetAdjustedLeftDoorPosition(float baseDoorPosition)
@@ -66,6 +66,8 @@ public static class DungeonPatches
 
     private static void UpdatePosition(Component door)
     {
+        if (!IsUltrawide()) return;
+        
         if (door != null)
         {
             var t = door.transform;
@@ -91,7 +93,7 @@ public static class DungeonPatches
                     {
                         UpdateDoorEntryPosition(dungeonDoor.playerEnterDestinyRoomPoint, Plugin.FinalRightDoorEntryPosition);
                     }
-
+            
                     Plugin.LOG.LogWarning($"-- (UpdatePosition) Right Door: {door.name}, New LocalPosition: {t.localPosition}");
                 }
             }
@@ -102,6 +104,7 @@ public static class DungeonPatches
     [HarmonyPatch(typeof(DungeonManager), nameof(DungeonManager.ChangeRoomTo))]
     public static void DungeonManager_ChangeRoomTo(ref DungeonRoom to)
     {
+        if (!IsUltrawide()) return;
         UpdatePosition(to.specialDoor);
         UpdatePosition(to.lastLevelDoor);
         UpdatePosition(to.firstLevelDoor);
@@ -114,6 +117,7 @@ public static class DungeonPatches
     [HarmonyPatch(typeof(DungeonLastLevelDoor), nameof(DungeonLastLevelDoor.OnGeneratedDungeon))]
     public static void DungeonLastLevelDoor_OnGeneratedDungeon(ref DungeonLastLevelDoor __instance)
     {
+        if (!IsUltrawide()) return;
         UpdatePosition(__instance.transform);
     }
 
@@ -121,24 +125,24 @@ public static class DungeonPatches
     [HarmonyPatch(typeof(NextLevelDoor), nameof(NextLevelDoor.Init))]
     public static void NextLevelDoor_Init(ref NextLevelDoor __instance)
     {
-        Plugin.LOG.LogWarning(
-            $"NextLevelDoor_Init: {__instance.name}, LocalPosition: {__instance.transform.localPosition}");
+        if (!IsUltrawide()) return;
+        UpdatePosition(__instance);
     }
 
     [HarmonyPostfix]
     [HarmonyPatch(typeof(DungeonBossRoomEnterDoor), nameof(DungeonBossRoomEnterDoor.Start))]
     public static void DungeonBossRoomEnterDoor_Start(ref DungeonBossRoomEnterDoor __instance)
     {
-        Plugin.LOG.LogWarning(
-            $"DungeonBossRoomEnterDoor.Start: {__instance.name}, LocalPosition: {__instance.transform.localPosition}");
+        if (!IsUltrawide()) return;
+        UpdatePosition(__instance);
     }
 
     [HarmonyPostfix]
     [HarmonyPatch(typeof(DungeonBossRoomExitDoor), nameof(DungeonBossRoomExitDoor.Start))]
     public static void DungeonBossRoomExitDoor_Start(ref DungeonBossRoomExitDoor __instance)
     {
-        Plugin.LOG.LogWarning(
-            $"DungeonBossRoomExitDoor.Start: {__instance.name}, LocalPosition: {__instance.transform.localPosition}");
+        if (!IsUltrawide()) return;
+        UpdatePosition(__instance);
     }
 
 
@@ -159,6 +163,7 @@ public static class DungeonPatches
 
     private static void UpdateFloorWidth(DungeonRoom dungeonRoom)
     {
+        if (!IsUltrawide()) return;
         UpdateAspectValues();
         var newFloorWidth = Mathf.RoundToInt(484 * ScaleFactor);
         dungeonRoom.roomFloorWidth = newFloorWidth;
@@ -169,11 +174,14 @@ public static class DungeonPatches
     [HarmonyPatch(typeof(DungeonRoom), nameof(DungeonRoom.EnterRoom))]
     public static void DungeonRoom_EnterRoom(ref DungeonRoom __instance)
     {
+        if (!IsUltrawide()) return;
+        //type DungeonDoor
         UpdatePosition(__instance.specialDoor);
-        UpdatePosition(__instance.lastLevelDoor);
-        UpdatePosition(__instance.firstLevelDoor);
         UpdatePosition(__instance.GetWestDoor());
         UpdatePosition(__instance.GetEastDoor());
+        //type not DungeonDoor
+        UpdatePosition(__instance.lastLevelDoor);
+        UpdatePosition(__instance.firstLevelDoor);
     }
 
 
@@ -183,22 +191,25 @@ public static class DungeonPatches
     {
         if (!IsUltrawide()) return;
         
-        switch (__instance.name)
-        {
-            case "LevelDoorLeft":
-                UpdateDoorPosition(__instance, Plugin.FinalLeftDoorPosition, GetAdjustedLeftDoorPosition);
-                UpdateDoorEntryPosition(__instance.playerEnterDestinyRoomPoint, Plugin.FinalLeftDoorEntryPosition);
-                break;
-
-            case "LevelDoorRight":
-                UpdateDoorPosition(__instance, Plugin.FinalRightDoorPosition, GetAdjustedRightDoorPosition);
-                UpdateDoorEntryPosition(__instance.playerEnterDestinyRoomPoint, Plugin.FinalRightDoorEntryPosition);
-                break;
-        }
+        UpdatePosition(__instance);
+        
+        // switch (__instance.name)
+        // {
+        //     case "LevelDoorLeft":
+        //         UpdateDoorPosition(__instance, Plugin.FinalLeftDoorPosition, GetAdjustedLeftDoorPosition);
+        //         UpdateDoorEntryPosition(__instance.playerEnterDestinyRoomPoint, Plugin.FinalLeftDoorEntryPosition);
+        //         break;
+        //
+        //     case "LevelDoorRight":
+        //         UpdateDoorPosition(__instance, Plugin.FinalRightDoorPosition, GetAdjustedRightDoorPosition);
+        //         UpdateDoorEntryPosition(__instance.playerEnterDestinyRoomPoint, Plugin.FinalRightDoorEntryPosition);
+        //         break;
+        // }
     }
 
     private static void UpdateDoorPosition(Component door, WriteOnce<float> finalDoorPosition, Func<float, float> getAdjustedPosition)
     {
+        if (door == null) return;
         if (finalDoorPosition.HasValue)
         {
             door.transform.localPosition = new Vector3(finalDoorPosition.Value, 0f, 0f);
@@ -216,6 +227,8 @@ public static class DungeonPatches
 
     private static void UpdateDoorEntryPosition(Transform playerEnterDestinyRoomPoint, WriteOnce<float> finalDoorEntryPosition)
     {
+        if(playerEnterDestinyRoomPoint == null) return;
+        
         if (finalDoorEntryPosition.HasValue)
         {
             playerEnterDestinyRoomPoint.localPosition = new Vector3(finalDoorEntryPosition.Value, 0f, 0f);

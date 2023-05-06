@@ -2,7 +2,7 @@
 using HarmonyLib;
 using UnityEngine;
 
-namespace Moonlighter;
+namespace Moonlighter.Patches;
 
 [HarmonyPatch]
 public static class ResolutionPatches

@@ -148,7 +148,9 @@ public static class DungeonPatches
 
     private static bool TransformIsRightAngled(Transform transform)
     {
-        return Math.Abs(transform.localRotation.z - 1) > 0.01;
+        var zRotation = Mathf.Abs(transform.localEulerAngles.z % 360);
+        return Mathf.Abs(zRotation - 90) <= 0.01 || Mathf.Abs(zRotation - 270) <= 0.01;
+
     }
 
     private static bool TransformIsLeftSide(Transform transform)
@@ -212,15 +214,22 @@ public static class DungeonPatches
         if (door == null) return;
         if (finalDoorPosition.HasValue)
         {
-            door.transform.localPosition = new Vector3(finalDoorPosition.Value, 0f, 0f);
+          
+            var transform = door.transform;
+            var localPosition = transform.localPosition;
+            localPosition = new Vector3(finalDoorPosition.Value, localPosition.y, localPosition.z);
+            transform.localPosition = localPosition;
+            Plugin.LOG.LogWarning($"FinalDoorPosition has value - Door ({door.name}) - setting door position to: {localPosition}");
         }
         else
         {
             var transform = door.transform;
-            var doorPosition = getAdjustedPosition(transform.localPosition.x);
-            transform.localPosition = new Vector3(doorPosition, 0f, 0f);
-
-            finalDoorPosition.Value = doorPosition;
+            var localPosition = transform.localPosition;
+            var doorPositionX = getAdjustedPosition(localPosition.x);
+            localPosition = new Vector3(doorPositionX,  localPosition.y, localPosition.z);
+            transform.localPosition = localPosition;
+            finalDoorPosition.Value = doorPositionX;
+            Plugin.LOG.LogWarning($"FinalDoorPosition does not have value (setting FinalDoorPosition to {doorPositionX}) - Door ({door.name}) - setting door position to: {localPosition}");
         }
     }
 
@@ -231,12 +240,16 @@ public static class DungeonPatches
         
         if (finalDoorEntryPosition.HasValue)
         {
-            playerEnterDestinyRoomPoint.localPosition = new Vector3(finalDoorEntryPosition.Value, 0f, 0f);
+            var localPosition = playerEnterDestinyRoomPoint.localPosition;
+            localPosition = new Vector3(finalDoorEntryPosition.Value, localPosition.y, localPosition.z);
+            playerEnterDestinyRoomPoint.localPosition = localPosition;
         }
         else
         {
-            var newX = playerEnterDestinyRoomPoint.localPosition.x * ScaleFactor;
-            playerEnterDestinyRoomPoint.localPosition = new Vector3(newX, 0f, 0f);
+            var localPosition = playerEnterDestinyRoomPoint.localPosition;
+            var newX = localPosition.x * ScaleFactor;
+            localPosition = new Vector3(newX, localPosition.y, localPosition.z);
+            playerEnterDestinyRoomPoint.localPosition = localPosition;
             finalDoorEntryPosition.Value = newX;
         }
     }

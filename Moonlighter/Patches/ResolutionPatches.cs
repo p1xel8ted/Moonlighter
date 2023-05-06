@@ -11,6 +11,8 @@ public static class ResolutionPatches
     [HarmonyPatch(typeof(OptionsGraphicTabContent), nameof(OptionsGraphicTabContent.CheckResolutions))]
     public static bool OptionsGraphicTabContent_CheckResolutions(ref OptionsGraphicTabContent __instance)
     {
+        if (!Plugin.UltrawideFixes.Value) return true;
+        
         var maxRefresh = Screen.resolutions.Max(a => a.refreshRate).refreshRate;
         var nativeResolution = new Resolution
         {

@@ -1,11 +1,10 @@
 ﻿using System.Collections.Generic;
-using System.Linq;
 using System.Reflection;
 using DG.Tweening.Core;
 using HarmonyLib;
 using UnityEngine;
 
-namespace Moonlighter;
+namespace Moonlighter.Patches;
 
 [HarmonyPatch]
 public static class DebugPatches

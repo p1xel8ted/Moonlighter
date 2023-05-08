@@ -14,15 +14,8 @@ public static class DebugPatches
     [HarmonyPatch(typeof(Debug), nameof(Debug.LogWarning), typeof(object),typeof(Object))]
     public static bool Debug_LogWarning(ref object message)
     {
-        if (message is string msg)
-        {
-            if (msg.Contains("season"))
-            {
-                return false;
-            }
-        }
-
-        return true;
+        if (message is not string msg) return true;
+        return !msg.Contains("season");
     }
 
     [HarmonyPatch]

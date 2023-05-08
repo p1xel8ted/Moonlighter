@@ -3,9 +3,10 @@
 [![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/F2F2DI3WA)<br>
 
 ## Features
+
 - Makes your main display resolution the only one available.
+- Corrects dungeon artwork - mostly. Will look average on anything wide than 21:9.
 - Skips intros and gamepad recommendation.
-- Adjust dialog scale.
 
 ## Installation
 - Grab the latest release of Moonlighter Ultra-wide Fix from [here.](https://github.com/p1xel8ted/Moonlighter/releases)

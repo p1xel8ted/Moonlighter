@@ -10,19 +10,13 @@ public static class ItemPatches
 {
     private static readonly WriteOnce<Dictionary<string, int>> ItemBackup = new();
 
-    private static string GetItemType(ItemMaster item)
+    private static HashSet<ItemMaster> GetItems()
     {
-        if (ItemDatabase.IsFromDLC(item))
-        {
-            return "DLC";
-        }
-
-        if (ItemDatabase.IsGenerated(item))
-        {
-            return "Generated";
-        }
-
-        return ItemDatabase.HasItem(item.name) ? "Vanilla" : "Unknown";
+        var regularItems = ItemDatabase.GetItems();
+        var currentGamePlusLevel = GameManager.Instance.GetCurrentGamePlusLevel();
+        var dlcItems = ItemDatabase.GetDLCItems("WANDERER_DLC", null, currentGamePlusLevel);
+        var generatedItems = ItemDatabase.GetGeneratedItems();
+        return new HashSet<ItemMaster>(regularItems.Concat(dlcItems).Concat(generatedItems));
     }
 
     public static void ApplyModifications()
@@ -33,15 +27,7 @@ public static class ItemPatches
             return;
         }
 
-        var regularItems = ItemDatabase.GetItems();
-
-        var currentGamePlusLevel = GameManager.Instance.GetCurrentGamePlusLevel();
-        var dlcItems = ItemDatabase.GetDLCItems("WANDERER_DLC", null, currentGamePlusLevel);
-        var generatedItems = ItemDatabase.GetGeneratedItems();
-
-        Plugin.LOG.LogWarning($"Regular Items: {regularItems.Count}, DLC Items: {dlcItems.Count}, Generated Items: {generatedItems.Count}");
-
-        var allItems = new HashSet<ItemMaster>(regularItems.Concat(dlcItems).Concat(generatedItems));
+        var allItems = GetItems();
 
         if (!ItemBackup.HasValue)
         {
@@ -52,41 +38,24 @@ public static class ItemPatches
             }
         }
 
-        var text = string.Empty;
+
         foreach (var item in allItems.Where(Modify))
         {
             if (ItemBackup.Value.TryGetValue(item.nameKey, out var original))
             {
                 item.maxStack = original;
-                var type = GetItemType(item);
-
-                text += $"\n\nNameKey: {item.nameKey} : {type}";
-                text += $"\nDescriptionKey: {item.descriptionKey} : {type}";
-                text += $"\nOriginal - {item.name}, MaxStack: {item.maxStack}";
 
 
                 if (Plugin.StackIt.Value)
                 {
-                    text += $"\nDoubling stacks for {item.name} : original = {original}";
-                    if (original > 0)
-                    {
-                        text += $"\nSetting maxStack to {original * 2}";
-                        DoubleStacks(item, original);
-                        text += $"\nNew maxStack = {item.maxStack}";
-                    }
+                    DoubleStacks(item, original);
                 }
                 else if (Plugin.CustomStackSizes.Value && original < Plugin.MaxStackSize.Value)
                 {
                     CustomStackSizes(item, original);
                 }
-
-                if (!Plugin.DebugMode.Value) continue;
-                
-                text += $"\nModified - {item.name}, MaxStack: {item.maxStack}";
-                text += "\n\n----------------------------------------------------------";
-                Plugin.LOG.LogWarning(text);
             }
-            else if (Plugin.DebugMode.Value)
+            else
             {
                 Plugin.LOG.LogWarning($"Item not found in backup: {item.name}");
             }

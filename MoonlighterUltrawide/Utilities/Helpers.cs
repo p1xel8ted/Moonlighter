@@ -1,7 +1,7 @@
 ﻿using System.Collections.Generic;
 using UnityEngine;
 
-namespace Moonlighter.Utilities;
+namespace MoonlighterUltrawide.Utilities;
 
 public static class Helpers
 {

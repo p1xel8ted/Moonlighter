@@ -6,15 +6,15 @@ using BepInEx.Configuration;
 using BepInEx.Logging;
 using DG.Tweening.Core;
 using HarmonyLib;
-using Moonlighter.Utilities;
+using MoonlighterUltrawide.Utilities;
 
-namespace Moonlighter
+namespace MoonlighterUltrawide
 {
     [BepInPlugin(PluginGuid, PluginName, PluginVersion)]
     public class Plugin : BaseUnityPlugin
     {
         private const string PluginGuid = "p1xel8ted.moonlighter.ultrawide";
-        private const string PluginName = "UltraWide";
+        private const string PluginName = "MoonlighterUltrawide";
         private const string PluginVersion = "0.0.1";
         public static ManualLogSource LOG;
         

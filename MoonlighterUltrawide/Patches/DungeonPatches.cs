@@ -1,9 +1,9 @@
 ﻿using System;
 using HarmonyLib;
-using Moonlighter.Utilities;
+using MoonlighterUltrawide.Utilities;
 using UnityEngine;
 
-namespace Moonlighter.Patches;
+namespace MoonlighterUltrawide.Patches;
 
 [HarmonyPatch]
 public static class DungeonPatches

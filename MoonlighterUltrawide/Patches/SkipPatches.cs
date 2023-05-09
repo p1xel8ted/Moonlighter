@@ -1,6 +1,6 @@
 ﻿using HarmonyLib;
 
-namespace Moonlighter.Patches;
+namespace MoonlighterUltrawide.Patches;
 
 [HarmonyPatch]
 public static class SkipPatches

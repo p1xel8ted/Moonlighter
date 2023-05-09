@@ -1,7 +1,7 @@
 ﻿// using System;
 // using DG.Tweening;
 //
-// namespace Moonlighter;
+// namespace MoonlighterUltrawide;
 //
 // using UnityEngine;
 // using UnityEngine.UI;

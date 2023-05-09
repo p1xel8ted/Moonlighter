@@ -1,6 +1,6 @@
 ﻿using UnityEngine;
 
-namespace Moonlighter.Utilities;
+namespace MoonlighterUltrawide.Utilities;
 
     public static class TransformExtensions
     {

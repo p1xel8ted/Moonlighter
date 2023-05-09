@@ -1,6 +1,6 @@
 using System;
 
-namespace Moonlighter.Utilities;
+namespace StackIt;
 
 public sealed class WriteOnce<T>
 {

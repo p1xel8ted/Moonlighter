@@ -3,53 +3,16 @@ using UnityEngine;
 
 namespace MoonlighterUltrawide.Utilities;
 
+/// <summary>
+/// A utility class providing helper methods for finding game objects.
+/// </summary>
 public static class Helpers
 {
-    internal static Sprite ResizeSprite(Sprite originalSprite, float scaleFactor)
-    {
-        if (originalSprite == null)
-        {
-            Debug.LogWarning("Original sprite is null. Skipping sprite resize.");
-            return null;
-        }
-
-        var originalTexture = originalSprite.texture;
-
-        if (!originalTexture.isReadable)
-        {
-            Debug.LogWarning($"Texture '{originalTexture.name}' is not readable. Skipping sprite resize.");
-            return originalSprite;
-        }
-
-        var newWidth = Mathf.RoundToInt(originalTexture.width * scaleFactor);
-        var newHeight = originalTexture.height;
-
-        var newTexture = new Texture2D(newWidth, newHeight);
-
-        for (var x = 0; x < newWidth; x++)
-        {
-            for (var y = 0; y < newHeight; y++)
-            {
-                newTexture.SetPixel(x, y,
-                    originalTexture.GetPixelBilinear((float) x / newWidth, (float) y / newHeight));
-            }
-        }
-
-        newTexture.Apply();
-
-        var newRect = new Rect(
-            originalSprite.rect.x,
-            originalSprite.rect.y,
-            Mathf.RoundToInt(originalSprite.rect.width * scaleFactor),
-            originalSprite.rect.height
-        );
-
-
-        return Sprite.Create(newTexture, newRect, originalSprite.pivot / scaleFactor,
-            originalSprite.pixelsPerUnit * scaleFactor);
-    }
-
-
+    /// <summary>
+    /// Finds all game objects in a given path.
+    /// </summary>
+    /// <param name="path">The path where to search for game objects.</param>
+    /// <returns>An enumerable collection of game objects located at the given path.</returns>
     internal static IEnumerable<GameObject> FindObjectsInPath(string path)
     {
         return Object.FindObjectsOfType<Transform>()
@@ -58,6 +21,12 @@ public static class Helpers
             .ToArray();
     }
 
+    /// <summary>
+    /// Finds all game objects with a specified name.
+    /// </summary>
+    /// <param name="name">The name of the game objects to search for.</param>
+    /// <param name="beginsWith">A flag indicating whether to match the start of the game object names. Defaults to false.</param>
+    /// <returns>An enumerable collection of game objects with the specified name.</returns>
     internal static IEnumerable<GameObject> FindObjects(string name, bool beginsWith = false)
     {
         if (beginsWith)

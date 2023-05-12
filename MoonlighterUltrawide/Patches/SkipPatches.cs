@@ -11,7 +11,7 @@ public static class SkipPatches
     {
         return !Plugin.SkipIntros.Value;
     }
-
+    
     [HarmonyPrefix]
     [HarmonyPatch(typeof(MainMenuPanel), nameof(MainMenuPanel.ShowGamepadGUI))]
     public static bool MainMenuPanel_ShowGamepadGUI(ref MainMenuPanel __instance)

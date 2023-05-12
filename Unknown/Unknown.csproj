@@ -230,8 +230,21 @@
 
   <ItemGroup>
     <None Remove="QuestIcon.png" />
-    <EmbeddedResource Include="QuestIcon.png" />
     <None Remove="WishIcon.png" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="QuestIcon_Blue.png" />
+    <EmbeddedResource Include="QuestIcon_Magenta.png" />
+    <EmbeddedResource Include="QuestIcon_Orange.png" />
+    <EmbeddedResource Include="QuestIcon_Red.png" />
+    <EmbeddedResource Include="QuestIcon_White.png" />
     <EmbeddedResource Include="WishIcon.png" />
+    <None Remove="Resources\QuestIcon_Blue.png" />
+    <None Remove="Resources\QuestIcon_Magenta.png" />
+    <None Remove="Resources\QuestIcon_Orange.png" />
+    <None Remove="Resources\QuestIcon_Red.png" />
+    <None Remove="Resources\QuestIcon_White.png" />
+    <None Remove="Resources\WishIcon.png" />
   </ItemGroup>
 </Project>

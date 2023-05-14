@@ -5,6 +5,7 @@ using BepInEx;
 using BepInEx.Configuration;
 using BepInEx.Logging;
 using HarmonyLib;
+using InControl;
 using UnityEngine;
 using Unknown.Patches;
 
@@ -102,9 +103,12 @@ public class Plugin : BaseUnityPlugin
     internal static ConfigEntry<Color> QuestTrackerCompletedColour { get; private set; }
     internal static ConfigEntry<Color> QuestTrackerFailedColour { get; private set; }
     internal static ConfigEntry<Color> QuestTrackerHalfwayColour { get; private set; }
-
+    internal static ConfigEntry<bool> AnimateQuestImages { get; private set; }
     private static ConfigEntry<KeyboardShortcut> QuestTrackerToggleKeybind { get; set; }
 
+    internal static ConfigEntry<int> FontSize { get; private set; }
+
+    internal static ConfigEntry<bool> ShowQuestTargetImages { get; private set; }
     private static Color Complete { get; } = new(0f / 255f, 255f / 255f, 0f / 255f, 0.75f);
     private static Color Progress { get; } = new(255f / 255f, 165f / 255f, 0f / 255f, 0.75f);
     private static Color Failed { get; } = new(255f / 255f, 0f / 255f, 0f / 255f, 0.75f);
@@ -116,8 +120,6 @@ public class Plugin : BaseUnityPlugin
         // Debug.unityLogger.logEnabled = false;
         // Instance = this;
         Logger = base.Logger;
-
-
         QuestTrackerToggleKeybind = Config.Bind("1. Keybinds", "Quest Tracker Toggle Keybind", new KeyboardShortcut(KeyCode.Q),
             new ConfigDescription("Defines the key combination that will show or hide the Quest tracker.", null, new ConfigurationManagerAttributes {Order = 50}));
 
@@ -131,24 +133,41 @@ public class Plugin : BaseUnityPlugin
 
         ColouriseQuestTracker = Config.Bind("3. Colours", "Colourise Quest Tracker", true,
             new ConfigDescription("If enabled, the Quest tracker will be color-coded based on the progress of quests.", null, new ConfigurationManagerAttributes {Order = 47}));
-        ColouriseQuestTracker.SettingChanged += (_, _) => { QuestTracker.UpdateQuestColours(); };
+        ColouriseQuestTracker.SettingChanged += (_, _) => { QuestTracker.UpdateEverything(); };
 
         QuestTrackerHeaderColour = Config.Bind("3. Colours", "Quest Tracker Header Colour", Header,
             new ConfigDescription("Defines the color of the header in the Quest tracker.", null, new ConfigurationManagerAttributes {Order = 46}));
-        QuestTrackerHeaderColour.SettingChanged += (_, _) => { QuestTracker.UpdateQuestColours(); };
+        QuestTrackerHeaderColour.SettingChanged += (_, _) => { QuestTracker.UpdateEverything(); };
 
         QuestTrackerCompletedColour = Config.Bind("3. Colours", "Quest Tracker Completed Colour", Complete,
             new ConfigDescription("Defines the color for completed quests in the Quest tracker.", null, new ConfigurationManagerAttributes {Order = 45}));
-        QuestTrackerCompletedColour.SettingChanged += (_, _) => { QuestTracker.UpdateQuestColours(); };
+        QuestTrackerCompletedColour.SettingChanged += (_, _) => { QuestTracker.UpdateEverything(); };
 
         QuestTrackerFailedColour = Config.Bind("3. Colours", "Quest Tracker Failed Colour", Failed,
             new ConfigDescription("Defines the color for failed quests in the Quest tracker.", null, new ConfigurationManagerAttributes {Order = 44}));
-        QuestTrackerFailedColour.SettingChanged += (_, _) => { QuestTracker.UpdateQuestColours(); };
+        QuestTrackerFailedColour.SettingChanged += (_, _) => { QuestTracker.UpdateEverything(); };
 
         QuestTrackerHalfwayColour = Config.Bind("3. Colours", "Quest Tracker Halfway Colour", Progress,
             new ConfigDescription("Defines the color for quests that are halfway completed in the Quest tracker.", null, new ConfigurationManagerAttributes {Order = 43}));
-        QuestTrackerHalfwayColour.SettingChanged += (_, _) => { QuestTracker.UpdateQuestColours(); };
+        QuestTrackerHalfwayColour.SettingChanged += (_, _) => { QuestTracker.UpdateEverything(); };
 
+        FontSize = Config.Bind("4. Other", "Font Size", 14,
+            new ConfigDescription("Defines the font size of the Quest tracker.", new AcceptableValueRange<int>(13, 18), new ConfigurationManagerAttributes {Order = 42}));
+        FontSize.SettingChanged += (_, _) =>
+        {
+            QuestTracker.UpdateEverything();
+        };
+        
+        ShowQuestTargetImages = Config.Bind("4. Other", "Show Quest Target Images", true,
+            new ConfigDescription("If enabled, the Quest tracker will show images of the quest targets.", null, new ConfigurationManagerAttributes {Order = 41}));
+        ShowQuestTargetImages.SettingChanged += (_, _) => { QuestTracker.UpdateQuestTargetImageVisibility(); };
+        
+        AnimateQuestImages = Config.Bind("4. Other", "Animate Quest Images", false,
+            new ConfigDescription("Animates the quest target images in the Quest tracker where possible.", null, new ConfigurationManagerAttributes {Order = 40}));
+        AnimateQuestImages.SettingChanged += (_, _) =>
+        {
+            QuestTracker.UpdateImageAnimations();
+        };
 
         //Red
         RedQuestIcon = AssetsLibTools.LoadImage("QuestIcon_Red.png", 8, 8);
@@ -186,7 +205,8 @@ public class Plugin : BaseUnityPlugin
 
     private void Update()
     {
-        if (QuestTrackerToggleKeybind.Value.IsUp() && QuestTracker.QuestTrackerObject != null)
+ 
+        if ((InputManager.ActiveDevice.RightStickButton.WasPressed || InputManager.ActiveDevice.LeftStickButton.WasPressed || QuestTrackerToggleKeybind.Value.IsUp()) && QuestTracker.QuestTrackerObject != null)
         {
             if (GameManager.Instance.currentGameSlot.willActiveQuests.Count > 0)
             {

@@ -16,10 +16,13 @@ namespace Unknown.Patches
     {
         private static Localize QuestTargetText { get; set; }
         private static Dictionary<ActiveQuest, Text> QuestTexts { get; set; } = new();
+        private static Dictionary<Text, Image> QuestTextImages { get; set; } = new();
         private const int QuestTrackerGap = -15;
         private const string QuestHeader = "QuestHeader";
         private const string QuestTrackerName = "QuestTracker";
         private const string Quest = "Quest";
+
+        private static Text HeaderText { get; set; }
 
         internal static GameObject QuestTrackerObject { get; private set; }
 
@@ -27,55 +30,29 @@ namespace Unknown.Patches
 
         private static List<ItemStack> AllPlayerItems { get; } = new();
 
-        
-        [HarmonyPostfix]
-        [HarmonyPatch(typeof(QuestPanel), nameof(QuestPanel.PlayFailedAnimation))]
-        public static void QuestPanel_PlayFailedAnimation(ref QuestPanel __instance)
-        {
-            Plugin.Logger.LogWarning("QuestPanel_PlayFailedAnimation");
-        }
-        
         [HarmonyPostfix]
         [HarmonyPatch(typeof(QuestPanel), nameof(QuestPanel.PlayFulfilledAnimation))]
         [HarmonyPatch(typeof(QuestPanel), nameof(QuestPanel.PlayFailedAnimation))]
         public static void QuestPanel_PlayFulfilledAnimation(ref QuestPanel __instance)
         {
-            // Create a temporary list of quests to remove
-            List<ActiveQuest> questsToRemove = new List<ActiveQuest>();
+            var questsToRemove = Enumerable.ToList(from quest in QuestTexts where quest.Key.completed || quest.Key.failed select quest.Key);
 
-            foreach (var quest in QuestTexts)
-            {
-                if (quest.Key.completed || quest.Key.failed)
-                {
-                    questsToRemove.Add(quest.Key);
-                }
-            }
-
-            // Iterate over the quests to remove and remove them from QuestTexts
             foreach (var quest in questsToRemove)
             {
+                QuestTextImages.Remove(QuestTexts[quest]);
                 Object.Destroy(QuestTexts[quest].gameObject);
                 QuestTexts.Remove(quest);
             }
         }
 
-        
-        // [HarmonyPostfix]
-        // [HarmonyPatch(typeof(QuestPanel), nameof(QuestPanel.OnQuestCancel))]
-        // public static void QuestPanel_OnQuestCancel(ref QuestPanel __instance)
-        // {
-        //     Plugin.Logger.LogWarning("QuestPanel_OnQuestCancel");
-        // }
-        
+
         [HarmonyPostfix]
         [HarmonyPatch(typeof(QuestPanel), nameof(QuestPanel.OnQuestAccept))]
         public static void QuestPanel_OnQuestAccept(ref QuestPanel __instance)
         {
             UpdateEverything();
         }
-        
-        
-        
+
 
         [HarmonyPostfix]
         [HarmonyPatch(typeof(Chest), nameof(Chest.SetChestFromSave))]
@@ -97,25 +74,22 @@ namespace Unknown.Patches
         [HarmonyPatch(typeof(HeroMerchantInventory), nameof(HeroMerchantInventory.SetItem))]
         public static void HeroMerchantInventory_SetItem(ref HeroMerchantInventory __instance, ref ItemStack stack, ref int index)
         {
-            if (stack != null) Plugin.Logger.LogWarning($"HeroMerchantInventory.SetItem: {stack.name}");
             PerformInventoryUpdate();
         }
-        
-        
+
+
         [HarmonyPostfix]
         [HarmonyPatch(typeof(ItemStack), nameof(ItemStack.SendRemovedFromHeroInventoryEvent))]
         public static void ItemStack_SendRemovedFromHeroInventoryEvent()
         {
-            Plugin.Logger.LogWarning("ItemStack_SendRemovedFromHeroInventoryEvent");
             PerformInventoryUpdate();
         }
-        
+
         [HarmonyPostfix]
         [HarmonyPatch(typeof(ItemStack), nameof(ItemStack.SendAddedToHeroInventoryEvent))]
         public static void ItemStack_SendAddedToHeroInventoryEvent()
         {
-           Plugin.Logger.LogWarning("ItemStack_SendAddedToHeroInventoryEvent");
-           PerformInDungeonOrTownUpdate();
+            PerformInDungeonOrTownUpdate();
         }
 
         private static void PerformInventoryUpdate()
@@ -127,6 +101,7 @@ namespace Unknown.Patches
                 if (ShopManager.Instance.bedChest != null) AllShopItems.AddRange(ShopManager.Instance.bedChest.GetAllItems());
                 AllShopItems.AddRange(ShopManager.Instance.references.shopChests.SelectMany(x => x.GetAllItems()));
             }
+
             AllPlayerItems.Clear();
             AllPlayerItems.AddRange(HeroMerchant.Instance.heroMerchantInventory.GetAllItems());
             UpdateEverything();
@@ -147,14 +122,6 @@ namespace Unknown.Patches
             PerformInventoryUpdate();
         }
 
-        private static void PerformInitialPlayerUpdate()
-        {
-
-            AllPlayerItems.Clear();
-            AllPlayerItems.AddRange(HeroMerchant.Instance.heroMerchantInventory.GetAllItems());
-
-            UpdateEverything();
-        }
 
         [HarmonyPostfix]
         [HarmonyPatch(typeof(HeroMerchantInventory), nameof(HeroMerchantInventory.Init))]
@@ -163,21 +130,10 @@ namespace Unknown.Patches
             PerformInventoryUpdate();
         }
 
-        private static void Hero_OnItemAdded(ItemStack arg1, int arg2)
-        {
-            PerformInventoryUpdate();
-        }
-
-        private static void Hero_OnItemRemoved(ItemStack arg1, int arg2)
-        {
-            PerformInventoryUpdate();
-        }
-
-
         private static int MyGetItemCount(ItemMaster searchItem)
         {
-            int one = 0;
-            int two = 0;
+            var one = 0;
+            var two = 0;
 
             foreach (var item in AllPlayerItems)
             {
@@ -232,6 +188,8 @@ namespace Unknown.Patches
 
             if (GameManager.Instance.currentGameSlot.willActiveQuests.Count <= 0) yield return false;
             QuestTexts.Clear();
+            QuestTextImages.Clear();
+            QuestTargetAnimations.Clear();
             QuestTrackerObject = GameObject.Find(QuestTrackerName);
             var count = 0;
             foreach (Transform child in QuestTrackerObject.transform)
@@ -292,10 +250,14 @@ namespace Unknown.Patches
                     questText = $"{count}. Collect {qty} {itemName} ({itemCount}/{quest.quest.quantity}).\n";
                 }
 
-                var questComponent = CreateTextComponent(questText, new Vector3(30, QuestTrackerGap * (count + 1), 0), $"Quest{count}", QuestTrackerObject.transform);
-                var questImage = CreateImageComponent(Helpers.GetQuestIconSpriteOfChosenColour(), new Vector3(-30, QuestTrackerGap * (count + 1), 0), $"QuestImage{count}", questComponent.transform);
-                SetQuestSprite(quest.quest, questImage, questComponent);
-                QuestTexts.Add(quest, questComponent);
+                var fontSizeGap = GetFontSizeGap(Plugin.FontSize.Value);
+                var newQuestText = CreateTextComponent(questText, new Vector3(30, fontSizeGap * (count + 1), 0), $"Quest{count}", QuestTrackerObject.transform);
+                var newQuestImage = CreateImageComponent(Helpers.GetQuestIconSpriteOfChosenColour(), new Vector3(-30, fontSizeGap * (count + 1), 0), $"QuestImage{count}", QuestTrackerObject.transform);
+                SetQuestSprite(quest.quest, newQuestImage, newQuestText);
+                QuestTexts.Add(quest, newQuestText);
+                QuestTextImages.Add(newQuestText, newQuestImage);
+
+                UpdateQuestTargetImageVisibility();
             }
 
             onComplete?.Invoke();
@@ -304,10 +266,26 @@ namespace Unknown.Patches
             yield return true;
         }
 
-        internal static void UpdateQuestColours()
+
+        private static float GetFontSizeGap(int fontSize)
+        {
+            return fontSize switch
+            {
+                13 => -12f,
+                14 => -13f,
+                15 => -14f,
+                16 => -15f,
+                17 => -16f,
+                18 => -17f,
+                _ => -15f
+            };
+        }
+
+
+        private static void UpdateQuestColours()
         {
             var currentGamePlusLevel = GameManager.Instance.GetCurrentGamePlusLevel();
-            
+            HeaderText.color = Plugin.ColouriseQuestTracker.Value ? Plugin.QuestTrackerHeaderColour.Value : Plugin.Grey;
             foreach (var quest in QuestTexts)
             {
                 if (quest.Key.completed)
@@ -324,23 +302,20 @@ namespace Unknown.Patches
 
                 var itemName = string.IsNullOrWhiteSpace(quest.Key.quest.killQuestTarget) ? quest.Key.quest.target : quest.Key.quest.killQuestTarget;
                 var itemByName = ItemDatabase.GetItemByName(itemName, currentGamePlusLevel);
-                var have =
-                    // if (MyShopManager != null)
-                    // {
-                    MyGetItemCount(itemByName);
+                var have = MyGetItemCount(itemByName);
 
-                // }
+
                 var needed = quest.Key.quest.quantity;
 
-                if(quest.Key.failed)
+                if (quest.Key.failed)
                 {
-                    quest.Value.color  = Plugin.ColouriseQuestTracker.Value ? Plugin.QuestTrackerFailedColour.Value : Plugin.Grey;
+                    quest.Value.color = Plugin.ColouriseQuestTracker.Value ? Plugin.QuestTrackerFailedColour.Value : Plugin.Grey;
                     continue;
                 }
-                
-                if(quest.Key.completed)
+
+                if (quest.Key.completed)
                 {
-                    quest.Value.color  = Plugin.ColouriseQuestTracker.Value ? Plugin.QuestTrackerCompletedColour.Value : Plugin.Grey;
+                    quest.Value.color = Plugin.ColouriseQuestTracker.Value ? Plugin.QuestTrackerCompletedColour.Value : Plugin.Grey;
                     continue;
                 }
 
@@ -361,10 +336,11 @@ namespace Unknown.Patches
             }
         }
 
+        private static List<Tweener> QuestTargetAnimations { get; set; } = new();
 
         private static void SetQuestSprite(Quest quest, Image image, Text questText)
         {
-            var newTransform = image.transform;
+            Transform newTransform;
             var currentGamePlusLevel = GameManager.Instance.GetCurrentGamePlusLevel();
             var itemByName = ItemDatabase.GetItemByName(quest.target, currentGamePlusLevel);
             if (itemByName != null)
@@ -392,35 +368,44 @@ namespace Unknown.Patches
                     var newTransformLocalPosition = newTransform.localPosition;
                     newTransformLocalPosition.y += 2;
                     newTransform.localPosition = newTransformLocalPosition;
+                    
+                    var newTweener = enemyAnimation.PlayOnImage(image).SetLoops(-1, LoopType.Restart);
+                    QuestTargetAnimations.Add(newTweener);
+                    if (Plugin.AnimateQuestImages.Value)
+                    {
+                        newTweener.Restart();
+                    }
+                    else
+                    {
+                        newTweener.Pause();
+                    }
                 }
             }
 
-            var imagePosition = newTransform.localPosition;
+
+            // Calculate the position of the image
+            var newTransform1 = image.transform;
+            var imagePosition = newTransform1.localPosition;
             var textWidth = questText.preferredWidth;
-            imagePosition.x += textWidth + 17.5f;
-            newTransform.localPosition = imagePosition;
+            imagePosition.x += textWidth + 17.5f; // 5 is a padding value, adjust as needed
+            newTransform1.localPosition = imagePosition;
         }
 
         private static void CreateQuestTracker()
         {
             var parent = GameObject.Find("GUI_New/Content/HUD/Hero_Info/Gold");
-            // Debug.LogWarning($"Parent object found: {parent != null}");
 
             QuestTrackerObject = new GameObject(QuestTrackerName);
             QuestTrackerObject.transform.SetParent(parent.transform, false);
             QuestTrackerObject.transform.localPosition = new Vector3(11, -60, 0);
-            // Debug.Log($"QuestTracker object created: {questTracker != null}");
 
-            // Create a new header text component
             const string headerText = "Requests:";
-            var headerComponent = CreateTextComponent(headerText, new Vector3(30, 0, 0), QuestHeader, QuestTrackerObject.transform);
-            // Debug.LogWarning($"HeaderText object created: {headerComponent != null}");
-
-            headerComponent.fontSize = 16;
-            headerComponent.color = Plugin.QuestTrackerHeaderColour.Value;
+            HeaderText = CreateTextComponent(headerText, new Vector3(30, 0, 0), QuestHeader, QuestTrackerObject.transform);
+            HeaderText.alignment = TextAnchor.MiddleLeft;
+            HeaderText.fontSize = Plugin.FontSize.Value + 2;
+            HeaderText.color = Plugin.ColouriseQuestTracker.Value ? Plugin.QuestTrackerHeaderColour.Value : Plugin.Grey;
 
             QuestTargetText = QuestTrackerObject.gameObject.AddComponent<Localize>();
-            // Debug.LogWarning($"Localize component added: {QuestTargetText != null}");
         }
 
 
@@ -430,7 +415,7 @@ namespace Unknown.Patches
 
             var textComponent = new GameObject(name, typeof(Text)).GetComponent<Text>();
             textComponent.font = originalText.font;
-            textComponent.fontSize = 14;
+            textComponent.fontSize = Plugin.FontSize.Value;
             textComponent.color = new Color(1, 1, 1, 0.75f);
             textComponent.alignment = TextAnchor.MiddleLeft;
             textComponent.horizontalOverflow = HorizontalWrapMode.Overflow;
@@ -448,12 +433,35 @@ namespace Unknown.Patches
         {
             var imageComponent = new GameObject(name, typeof(Image)).GetComponent<Image>();
             imageComponent.sprite = sprite;
-
             Transform newTransform;
             (newTransform = imageComponent.transform).SetParent(parent, false);
             newTransform.localPosition = localPosition;
 
             return imageComponent;
+        }
+
+
+        public static void UpdateQuestTargetImageVisibility()
+        {
+            foreach (var image in QuestTextImages)
+            {
+                image.Value.enabled = Plugin.ShowQuestTargetImages.Value;
+            }
+        }
+
+        public static void UpdateImageAnimations()
+        {
+            foreach (var t in QuestTargetAnimations)
+            {
+                if (Plugin.AnimateQuestImages.Value)
+                {
+                    t.Restart();
+                }
+                else
+                {
+                    t.Pause();
+                }
+            }
         }
     }
 }

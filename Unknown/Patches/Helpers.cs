@@ -1,5 +1,4 @@
 ﻿using System.Collections.Generic;
-using System.Linq;
 using UnityEngine;
 using UnityEngine.UI;
 using Enumerable = System.Linq.Enumerable;
@@ -119,17 +118,17 @@ public static class Helpers
     private static void UpdateQuestMarkerColours()
     {
         var sprite = GetQuestIconSpriteOfChosenColour();
-        foreach (var s in EnemyQuestMarkers)
+        foreach (var s in EnemyQuestMarkers.Where(s => s != null))
         {
             s.sprite = sprite;
         }
 
-        foreach (var s in ItemStackWorldMarkers)
+        foreach (var s in ItemStackWorldMarkers.Where(s => s != null))
         {
             s.sprite = sprite;
         }
 
-        foreach (var i in ItemStackInventoryMarkers)
+        foreach (var i in ItemStackInventoryMarkers.Where(s => s != null))
         {
             i.sprite = sprite;
         }

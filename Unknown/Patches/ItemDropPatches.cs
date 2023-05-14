@@ -14,6 +14,15 @@ namespace Unknown.Patches
         {
             Helpers.SetItemStackMarkersInactive(__instance);
         }
+        
+        [HarmonyPostfix]
+        [HarmonyPatch(typeof(ItemStack), nameof(ItemStack.OnAddedToHeroInventory))]
+        [HarmonyPatch(typeof(ItemStack), nameof(ItemStack.OnAddedToContainer))]
+        [HarmonyPatch(typeof(ItemStack), nameof(ItemStack.OnEndDrop))]
+        public static void ItemStack_OnAddedToHeroInventory(ref ItemStack __instance)
+        {
+           QuestTracker.UpdateEverything();
+        }
 
         [HarmonyPostfix]
         [HarmonyPatch(typeof(ItemStack), nameof(ItemStack.Drop), typeof(Vector2), typeof(float), typeof(Transform))]

@@ -14,7 +14,7 @@ namespace StackIt
     {
         private const string PluginGuid = "p1xel8ted.moonlighter.stackit";
         private const string PluginName = "Stack It!";
-        private const string PluginVersion = "0.0.1";
+        private const string PluginVersion = "0.1.0";
 
         /// <summary>
         /// Logger used to log messages to the BepInEx log.

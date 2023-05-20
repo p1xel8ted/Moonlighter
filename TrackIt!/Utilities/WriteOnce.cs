@@ -1,4 +1,4 @@
-namespace Unknown.Utilities;
+namespace TrackIt.Utilities;
 
 /// <summary>
 /// Represents a write-once storage for a value of type <typeparamref name="T"/>.

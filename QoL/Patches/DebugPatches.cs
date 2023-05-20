@@ -4,7 +4,7 @@ using DG.Tweening.Core;
 using HarmonyLib;
 using UnityEngine;
 
-namespace MoonlighterUltrawide.Patches;
+namespace QoL.Patches;
 
 /// <summary>
 /// Contains Harmony patches for debugging purposes.

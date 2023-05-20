@@ -13,7 +13,7 @@ namespace StackIt
     public class Plugin : BaseUnityPlugin
     {
         private const string PluginGuid = "p1xel8ted.moonlighter.stackit";
-        private const string PluginName = "Stack It!";
+        private const string PluginName = "StackIt!";
         private const string PluginVersion = "0.1.0";
 
         /// <summary>

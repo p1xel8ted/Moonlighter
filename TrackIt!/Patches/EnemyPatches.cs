@@ -1,8 +1,10 @@
-﻿using HarmonyLib;
+﻿using System.Diagnostics.CodeAnalysis;
+using HarmonyLib;
 
-namespace Unknown.Patches;
+namespace TrackIt.Patches;
 
 [HarmonyPatch]
+[SuppressMessage("ReSharper", "InconsistentNaming")]
 public static class EnemyPatches
 {
     [HarmonyPostfix]
@@ -12,7 +14,7 @@ public static class EnemyPatches
         var quest = Helpers.IsQuestEnemy(spawnPair.enemy);
         if (__result != null && quest)
         {
-            Plugin.Logger.LogWarning($"{__instance.name} spawned enemy: {spawnPair.enemy.name}. Champion?: {isChampion}. Quest?: {quest}");
+            Plugin.Logger.LogWarning($"{__instance.name} spawned enemy: {spawnPair.enemy.name}. Champion?: {isChampion}. Quest?: {true}");
             Helpers.AttachQuestMarkerToEnemy(__result);
         }
     }

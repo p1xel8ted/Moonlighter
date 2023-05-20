@@ -1,9 +1,11 @@
 ﻿using System;
+using System.Diagnostics.CodeAnalysis;
 using HarmonyLib;
 
-namespace Unknown.Patches;
+namespace TrackIt.Patches;
 
 [HarmonyPatch]
+[SuppressMessage("ReSharper", "InconsistentNaming")]
 public static class MiscPatches
 {
 

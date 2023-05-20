@@ -1,9 +1,11 @@
-﻿using HarmonyLib;
+﻿using System.Diagnostics.CodeAnalysis;
+using HarmonyLib;
 using UnityEngine;
 
-namespace Unknown.Patches
+namespace TrackIt.Patches
 {
     [HarmonyPatch]
+    [SuppressMessage("ReSharper", "InconsistentNaming")]
     public static class ItemDropPatches
     {
         [HarmonyPrefix]
@@ -13,6 +15,7 @@ namespace Unknown.Patches
         public static void ItemStack_ApplyFallDamageEffect(ref ItemStack __instance)
         {
             Helpers.SetItemStackMarkersInactive(__instance);
+            Plugin.QuestTrackerNeedsUpdating = true;
         }
         
         [HarmonyPostfix]
@@ -21,7 +24,7 @@ namespace Unknown.Patches
         [HarmonyPatch(typeof(ItemStack), nameof(ItemStack.OnEndDrop))]
         public static void ItemStack_OnAddedToHeroInventory(ref ItemStack __instance)
         {
-           QuestTracker.UpdateEverything();
+            Plugin.QuestTrackerNeedsUpdating = true;
         }
 
         [HarmonyPostfix]
@@ -30,6 +33,7 @@ namespace Unknown.Patches
         {
             Helpers.AttachMarkerToItemStack(__instance);
             Helpers.UpdateItemStackMarkerPositions(__instance);
+            Plugin.QuestTrackerNeedsUpdating = true;
         }
     }
 }

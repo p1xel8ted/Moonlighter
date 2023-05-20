@@ -13,9 +13,14 @@
     <Company>$(Authors)</Company>
     <Product>$(MSBuildProjectName)</Product>
     <PackageId>$(MSBuildProjectName)</PackageId>
+
   </PropertyGroup>
 
-  <!--Default all references to CopyLocal False.-->
+    <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
+        <DebugType>portable</DebugType>
+    </PropertyGroup>
+
+    <!--Default all references to CopyLocal False.-->
   <ItemDefinitionGroup>
     <Reference><Private>False</Private></Reference>
     <ProjectReference><Private>False</Private></ProjectReference>

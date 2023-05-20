@@ -1,9 +1,10 @@
 ﻿using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using UnityEngine;
 using UnityEngine.UI;
 using Enumerable = System.Linq.Enumerable;
 
-namespace Unknown.Patches;
+namespace TrackIt.Patches;
 
 public static class Helpers
 {
@@ -161,8 +162,13 @@ public static class Helpers
     {
         var spriteObject = new GameObject(Plugin.QuestIcon);
         var spriteRenderer = spriteObject.AddComponent<SpriteRenderer>();
-
         spriteRenderer.sprite = GetQuestIconSpriteOfChosenColour();
+        
+        var spriteOrder = spriteObject.AddComponent<SpriteDepthOrderRender>();
+        spriteOrder.sprite = spriteRenderer;
+        spriteOrder.forcedOrderValue = 5000;
+        spriteOrder.forceOrderValue = true;
+        
         spriteObject.transform.SetParent(parentTransform);
         spriteObject.transform.localPosition = new Vector3(0, 20, 0);
         spriteObject.transform.localScale = new Vector3(0.5f, 0.5f, 0.5f);
@@ -174,11 +180,16 @@ public static class Helpers
     {
         var spriteObject = new GameObject(Plugin.WishIconSpriteString);
         var spriteRenderer = spriteObject.AddComponent<SpriteRenderer>();
+        
+        var spriteOrder = spriteObject.AddComponent<SpriteDepthOrderRender>();
+        spriteOrder.sprite = spriteRenderer;
+        spriteOrder.forcedOrderValue = 5000;
+        spriteOrder.forceOrderValue = true;
+        
         spriteRenderer.sprite = Plugin.WishIconSprite;
         spriteObject.transform.SetParent(parentTransform);
         spriteObject.transform.localPosition = new Vector3(0, 20, 0);
         spriteObject.transform.localScale = new Vector3(0.5f, 0.5f, 0.5f);
-        spriteRenderer.sortingOrder = 5000;
     }
 
     private static bool IsWishlisted(ItemMaster itemMaster)
@@ -189,13 +200,13 @@ public static class Helpers
 
     public static bool IsQuestEnemy(PrefabSpawnInfo enemy)
     {
-        return Enumerable.Any(HeroMerchant.Instance.activeQuests.Select(quest => quest), q => q.quest.killQuestTarget == enemy.name || q.quest.target == enemy.name);
+        return Enumerable.Any(QuestTracker.GetQuests().Select(quest => quest), q => q.quest.killQuestTarget == enemy.name || q.quest.target == enemy.name);
     }
 
     private static bool IsQuestItem(ItemMaster itemMaster)
     {
         var currentGamePlusLevel = GameManager.Instance.GetCurrentGamePlusLevel();
-        return Enumerable.Any(from q in HeroMerchant.Instance.activeQuests.Select(quest => quest)
+        return Enumerable.Any(from q in QuestTracker.GetQuests().Select(quest => quest)
             let one = ItemDatabase.GetItemByName(q.quest.target, currentGamePlusLevel)
             let two = ItemDatabase.GetItemByName(q.quest.killQuestTarget, currentGamePlusLevel)
             where one == itemMaster || two == itemMaster
@@ -220,6 +231,7 @@ public static class Helpers
         UpdateQuestMarkerColours();
     }
 
+    [SuppressMessage("ReSharper", "InconsistentNaming")]
     internal static GameObject CreateAndAttachQuestSprite(InventorySlotGUI __instance)
     {
         var parent = __instance.transform;
@@ -228,18 +240,20 @@ public static class Helpers
         var questIcon = FindQuestIcon(parent);
         RectTransform questRect;
         Image questImage;
-
+    
         if (questIcon == null)
         {
             questIcon = new GameObject(Plugin.QuestIcon);
             questIcon.transform.SetParent(parent, false);
             questImage = questIcon.AddComponent<Image>();
             questRect = questIcon.GetComponent<RectTransform>();
+          
         }
         else
         {
             questImage = questIcon.GetComponent<Image>();
             questRect = questIcon.GetComponent<RectTransform>();
+           
         }
 
         questRect.anchorMin = originalRect.anchorMin;
@@ -250,8 +264,9 @@ public static class Helpers
         
         questImage.sprite = GetQuestIconSpriteOfChosenColour();
 
+        
         questIcon.transform.localScale = new Vector3(0.75f, 0.75f, 1f);
-        questIcon.transform.localPosition = Helpers.GetChosenPositionInInventory();
+        questIcon.transform.localPosition = new Vector3(-12, -12, 1f);
 
         var newTransform = __instance.imageWishlisted.transform;
         newTransform.localPosition = new Vector3(-12, 12, 1f);
@@ -260,6 +275,7 @@ public static class Helpers
         return questIcon;
     }
 
+    [SuppressMessage("ReSharper", "InconsistentNaming")]
     private static void UpdateQuestIconPositionInInventories(InventorySlotGUI __instance)
     {
         var questIcon = FindQuestIcon(__instance.transform);
@@ -269,18 +285,7 @@ public static class Helpers
             questIcon = CreateAndAttachQuestSprite(__instance);
         }
 
-        questIcon.transform.localPosition = GetChosenPositionInInventory();
-    }
-
-    private static Vector3 GetChosenPositionInInventory()
-    {
-        var chosenPosition = Plugin.ChosenQuestIconPosition switch
-        {
-            Plugin.QuestIconPosition.TopRight => new Vector3(12, 12, 1f),
-            Plugin.QuestIconPosition.BottomLeft => new Vector3(-12, -12, 1f),
-            _ => new Vector3(12, 12, 1f)
-        };
-        return chosenPosition;
+        questIcon.transform.localPosition = new Vector3(-12, -12, 1f);
     }
 
     internal static void UpdateQuestIconVisibilityInInventories(InventorySlotGUI slot)

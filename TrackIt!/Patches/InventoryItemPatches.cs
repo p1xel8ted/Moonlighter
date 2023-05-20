@@ -1,12 +1,12 @@
-﻿using HarmonyLib;
+﻿using System.Diagnostics.CodeAnalysis;
+using HarmonyLib;
 
-namespace Unknown.Patches
+namespace TrackIt.Patches
 {
     [HarmonyPatch]
+    [SuppressMessage("ReSharper", "InconsistentNaming")]
     public static class InventoryItemPatches
     {
-
-
         [HarmonyPostfix]
         [HarmonyPatch(typeof(InventoryPanel), nameof(InventoryPanel.OnInventorySlotSwap), typeof(InventorySlotGUI), typeof(InventorySlotGUI))]
         public static void InventoryPanel_OnInventorySlotSwap(ref InventoryPanel __instance, ref InventorySlotGUI origin, ref InventorySlotGUI destination)

@@ -8,7 +8,7 @@
 ## Features
 
 - Makes your main display resolution the only one available.
-- Corrects dungeon artwork - mostly. Will look average on anything wide than 21:9.
+- Corrects dungeon artwork - mostly. Will look average on anything wider than 21:9.
 - Skips intros and gamepad recommendation.
 
 ## Installation

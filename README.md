@@ -9,7 +9,6 @@
 
 - Makes your main display resolution the only one available.
 - Corrects dungeon artwork - mostly. Will look average on anything wider than 21:9.
-- Skips intros and gamepad recommendation.
 
 ## Installation
 - Grab the latest release of Moonlighter Ultra-wide Fix from [here.](https://github.com/p1xel8ted/Moonlighter/releases)

@@ -1,4 +1,4 @@
-### Moonlighter Ultra-wide Fix
+### Moonlighter Ultra-Wide Fix
 
 ![Game Logo](header.jpg)<br>
 

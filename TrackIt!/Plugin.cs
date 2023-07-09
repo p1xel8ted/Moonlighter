@@ -14,11 +14,12 @@ using UnityEngine;
 namespace TrackIt;
 
 [BepInPlugin(PluginGuid, PluginName, PluginVersion)]
+[BepInDependency("Aidanamite.AssetsLib")]
 public class Plugin : BaseUnityPlugin
 {
     private const string PluginGuid = "p1xel8ted.moonlighter.trackit";
     private const string PluginName = "TrackIt!";
-    private const string PluginVersion = "0.1.0";
+    private const string PluginVersion = "0.1.1";
 
     internal static Texture2D RedQuestIcon { get; private set; }
     internal static Sprite RedQuestIconSprite { get; private set; }

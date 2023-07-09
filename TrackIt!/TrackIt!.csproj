@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <Version>0.1.0</Version>
+    <Version>0.1.1</Version>
     <AssemblyVersion>$(Version)</AssemblyVersion>
     <FileVersion>$(Version)</FileVersion>
   </PropertyGroup>
@@ -16,7 +16,7 @@
       <HintPath>..\libs\Assembly-CSharp.dll</HintPath>
     </Reference>
     <Reference Include="AssetsLib">
-      <HintPath>..\..\..\..\Games\steamapps\common\Moonlighter\BepInEx\plugins\AssetsLib.dll</HintPath>
+      <HintPath>F:\Games\steamapps\common\Moonlighter\BepInEx\plugins\AssetsLib.dll</HintPath>
     </Reference>
     <Reference Include="DOTween">
       <HintPath>..\libs\DOTween.dll</HintPath>
